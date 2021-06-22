@@ -1,0 +1,17 @@
+name: compile README
+on:
+  push:
+    paths:
+      - README_latex.md
+jobs:
+  compile_readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install
+        run: npm install
+      - name: compile
+        run: node index.js README_latex.md -o README.md
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "[Workflow] Re-compiled README.md"
