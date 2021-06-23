@@ -19,10 +19,34 @@ function encode(str) {
 	});
 }
 
-function translate(tokens, line_stack = []) {
+https://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
+function escape_re(string) {
+	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
+function translate(tokens, _line_stack) {
 	let compiled = "";
+	// array of strings or numbers (strings currently used for blockquotes, numbers used for lists/unordered lists)
+	let line_stack = _line_stack || [];
 	let link_stack = []; // serves as like a line prefix
-	let list_stack = []; // list numbering stack
+	let get_prefix = () => {
+		let str = "";
+		let to_string = (item, next_item_is_list) => {
+			if(typeof item == "string") {
+				return item;
+			} else {
+				if(!next_item_is_list) {
+					return item == 0 ? "* " : `${item}. `;
+				} else {
+					return "  ";
+				}
+			}
+		};
+		for(let i = 0; i < line_stack.length; i++) {
+			str += to_string(line_stack[i], typeof line_stack[i + 1] == "number");
+		}
+		return str;
+	};
 	//for(let token of tokens) {
 	for(let i = 0; i < tokens.length; i++) {
 		let token = tokens[i];
@@ -33,13 +57,13 @@ function translate(tokens, line_stack = []) {
 				compiled += `${token.markup} `;
 				break;
 			case "heading_close":
-				compiled += `\n${line_stack.join("")}\n`;
+				compiled += `\n${get_prefix()}\n`;
 				break;
 			case "paragraph_open":
-				compiled += line_stack.join("");
+				compiled += get_prefix()
 				break;
 			case "paragraph_close":
-				compiled += `\n${line_stack.join("")}\n`;
+				compiled += `\n${get_prefix()}\n`;
 				break;
 			case "math_block":
 				assert(tokens[i+1].type == "math_block_end", "math_block not followed immediately by math_block_end", token);
@@ -62,7 +86,7 @@ function translate(tokens, line_stack = []) {
 				compiled += `![${translate(token.children, line_stack)}](${token.attrs[0][1]}) `;
 				break;
 			case "softbreak":
-				compiled += "\n" + line_stack.join("");
+				compiled += "\n" + get_prefix();
 				break;
 			case "math_inline":
 				//compiled += `![${token.content}](https://render.githubusercontent.com/render/math?math=${encode(token.content)})`;
@@ -89,20 +113,29 @@ function translate(tokens, line_stack = []) {
 				line_stack.push("> ");
 				break;
 			case "blockquote_close":
-				let r = new RegExp(`\n${line_stack.join("")}\n$`);
-				line_stack.pop();
-				compiled = compiled.replace(r, `\n${line_stack.join("")}\n`)
+				{
+					let r = new RegExp(`\n${escape_re(get_prefix())}\n$`);
+					line_stack.pop();
+					// todo: + "\n"; here and at list closes? Would be more pretty but would require more logic to trim newlines.
+					compiled = compiled.replace(r, `\n${get_prefix()}\n`);
+				}
 				break;
 			case "bullet_list_open":
-				if(line_stack[line_stack.length - 1] == "* ") { line_stack[line_stack.length - 1] = "  "; }
-				line_stack.push("* ");
-				list_stack.push(1);
+				{
+					let r = new RegExp(`\n${escape_re(get_prefix())}\n$`);
+					compiled = compiled.replace(r, "\n");
+					line_stack.push(0);
+				}
 				break;
 			case "bullet_list_close":
 				line_stack.pop();
 				break;
 			case "ordered_list_open":
-				line_stack.push("1.");
+				{
+					let r = new RegExp(`\n${escape_re(get_prefix())}\n$`);
+					compiled = compiled.replace(r, "\n");
+					line_stack.push(1);
+				}
 				break;
 			case "ordered_list_close":
 				line_stack.pop();
@@ -110,6 +143,13 @@ function translate(tokens, line_stack = []) {
 			case "list_item_open":
 				break;
 			case "list_item_close":
+				{
+					let r = new RegExp(`\n${escape_re(get_prefix())}\n$`);
+					compiled = compiled.replace(r, "\n");
+					if(typeof line_stack[line_stack.length - 1] != "string" && line_stack[line_stack.length - 1] != 0) {
+						line_stack[line_stack.length - 1]++;
+					}
+				}
 				break;
 			case "fence":
 				assert(token.markup == "```", "code fence", token);

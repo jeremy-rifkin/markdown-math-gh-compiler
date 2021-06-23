@@ -1,6 +1,6 @@
 {
   "name": "markdown-math-gh-compiler",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Compile markdown with latex equations to github friendly markdown with rendered equations.",
   "repository": "https://github.com/jeremy-rifkin/markdown-math-gh-compiler",
   "main": "index.js",

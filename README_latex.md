@@ -8,7 +8,8 @@ tool which compiles markdown with math into github-friendly markdown with render
 
 It's designed for use as part of a makefile, github action ([example][2]), or similar workflow.
 
-Currently tables and lists are not supported in the markdown reconstruction.
+Tables are not supported currently. Lists are mostly supported but there a couple kinks with nested
+lists.
 
 The tool works by reconstructing the tokens returned by a markdown parser, altering only the math
 token. This is necessary for robustness, simply matching `$...$` and `$$...$$` might match half-way
