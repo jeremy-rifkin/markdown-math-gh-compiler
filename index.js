@@ -66,13 +66,12 @@ function translate(tokens, _line_stack) {
 				compiled += `\n${get_prefix()}\n`;
 				break;
 			case "math_block":
-				assert(tokens[i+1].type == "math_block_end", "math_block not followed immediately by math_block_end", token);
 				//compiled += `${token.markup}${token.content}${token.markup}\n\n`;
 				//compiled += `<div style="text-align:center"><img alt="${token.content}" src="https://render.githubusercontent.com/render/math?math=${encode(token.content)}"/></div>\n\n`;
 				compiled += `<p align="center"><img alt="${token.content}" src="https://render.githubusercontent.com/render/math?math=${encode(token.content)}"/></p>\n\n`;
 				break;
 			case "math_block_end":
-				assert(token.content == "", "content not empty", token);
+				assert(token.content == "", "non-empty math block end token", token);
 				break;
 			case "inline":
 				//compiled += token.content;
